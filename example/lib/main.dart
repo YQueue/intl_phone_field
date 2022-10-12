@@ -64,6 +64,15 @@ class _MyAppState extends State<MyApp> {
                   onCountryChanged: (country) {
                     print('Country changed to: ' + country.name);
                   },
+                  countryPickerFactory: ((
+                    selectedCountry,
+                    countryList,
+                    filteredCountries,
+                    onCountryChanged,
+                  ) {
+                    // TODO
+                    return Container();
+                  }),
                 ),
                 SizedBox(
                   height: 10,

@@ -9,6 +9,13 @@ import 'package:intl_phone_field/country_picker_dialog.dart';
 import './countries.dart';
 import './phone_number.dart';
 
+typedef CountryPickerFactory = Widget Function(
+  Country selectedCountry,
+  List<Country> countryList,
+  List<Country> filteredCountries,
+  ValueChanged<Country> onCountryChanged,
+);
+
 class IntlPhoneField extends StatefulWidget {
   /// Whether to hide the text being edited (e.g., for passwords).
   final bool obscureText;
@@ -230,6 +237,8 @@ class IntlPhoneField extends StatefulWidget {
   /// & pick dialog
   final PickerDialogStyle? pickerDialogStyle;
 
+  final CountryPickerFactory? countryPickerFactory;
+
   /// The margin of the country selector button.
   ///
   /// The amount of space to surround the country selector button.
@@ -280,6 +289,7 @@ class IntlPhoneField extends StatefulWidget {
     this.cursorWidth = 2.0,
     this.showCursor = true,
     this.pickerDialogStyle,
+    this.countryPickerFactory,
     this.flagsButtonMargin = EdgeInsets.zero,
   }) : super(key: key);
 
@@ -308,19 +318,25 @@ class _IntlPhoneFieldState extends State<IntlPhoneField> {
     if (widget.initialCountryCode == null && number.startsWith('+')) {
       number = number.substring(1);
       // parse initial value
-      _selectedCountry = countries.firstWhere((country) => number.startsWith(country.fullCountryCode), orElse: () => _countryList.first);
+      _selectedCountry = countries.firstWhere(
+          (country) => number.startsWith(country.fullCountryCode),
+          orElse: () => _countryList.first);
 
       // remove country code from the initial number value
-      number = number.replaceFirst(RegExp("^${_selectedCountry.fullCountryCode}"), "");
+      number = number.replaceFirst(
+          RegExp("^${_selectedCountry.fullCountryCode}"), "");
     } else {
-      _selectedCountry =
-          _countryList.firstWhere((item) => item.code == (widget.initialCountryCode ?? 'US'), orElse: () => _countryList.first);
+      _selectedCountry = _countryList.firstWhere(
+          (item) => item.code == (widget.initialCountryCode ?? 'US'),
+          orElse: () => _countryList.first);
 
       // remove country code from the initial number value
-      if(number.startsWith('+')){
-        number = number.replaceFirst(RegExp("^\\+${_selectedCountry.fullCountryCode}"), "");
-      }else{
-        number = number.replaceFirst(RegExp("^${_selectedCountry.fullCountryCode}"), "");
+      if (number.startsWith('+')) {
+        number = number.replaceFirst(
+            RegExp("^\\+${_selectedCountry.fullCountryCode}"), "");
+      } else {
+        number = number.replaceFirst(
+            RegExp("^${_selectedCountry.fullCountryCode}"), "");
       }
     }
 
@@ -345,22 +361,31 @@ class _IntlPhoneFieldState extends State<IntlPhoneField> {
 
   Future<void> _changeCountry() async {
     filteredCountries = _countryList;
+    final onCountryChanged = (Country country) {
+      _selectedCountry = country;
+      widget.onCountryChanged?.call(country);
+      setState(() {});
+    };
+    final customCountryPicker = widget.countryPickerFactory?.call(
+      _selectedCountry,
+      _countryList,
+      filteredCountries,
+      onCountryChanged,
+    );
     await showDialog(
       context: context,
       useRootNavigator: false,
       builder: (context) => StatefulBuilder(
-        builder: (ctx, setState) => CountryPickerDialog(
-          style: widget.pickerDialogStyle,
-          filteredCountries: filteredCountries,
-          searchText: widget.searchText,
-          countryList: _countryList,
-          selectedCountry: _selectedCountry,
-          onCountryChanged: (Country country) {
-            _selectedCountry = country;
-            widget.onCountryChanged?.call(country);
-            setState(() {});
-          },
-        ),
+        builder: (ctx, setState) => customCountryPicker != null
+            ? customCountryPicker
+            : CountryPickerDialog(
+                style: widget.pickerDialogStyle,
+                filteredCountries: filteredCountries,
+                searchText: widget.searchText,
+                countryList: _countryList,
+                selectedCountry: _selectedCountry,
+                onCountryChanged: onCountryChanged,
+              ),
       ),
     );
     if (this.mounted) setState(() {});
@@ -392,7 +417,8 @@ class _IntlPhoneFieldState extends State<IntlPhoneField> {
         widget.onSaved?.call(
           PhoneNumber(
             countryISOCode: _selectedCountry.code,
-            countryCode: '+${_selectedCountry.dialCode}${_selectedCountry.regionCode}',
+            countryCode:
+                '+${_selectedCountry.dialCode}${_selectedCountry.regionCode}',
             number: value!,
           ),
         );
