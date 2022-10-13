@@ -361,17 +361,31 @@ class _IntlPhoneFieldState extends State<IntlPhoneField> {
 
   Future<void> _changeCountry() async {
     filteredCountries = _countryList;
-    final onCountryChanged = (Country country) {
-      _selectedCountry = country;
+
+    final onCountryChanged = (Country country) async {
+      setState(() => _selectedCountry = country);
       widget.onCountryChanged?.call(country);
-      setState(() {});
+
+      final phoneNumber = PhoneNumber(
+        countryISOCode: _selectedCountry.code,
+        countryCode: '+${_selectedCountry.fullCountryCode}',
+        number: number,
+      );
+
+      if (widget.autovalidateMode != AutovalidateMode.disabled) {
+        validatorMessage = await widget.validator?.call(phoneNumber);
+      }
+
+      widget.onChanged?.call(phoneNumber);
     };
+
     final customCountryPicker = widget.countryPickerFactory?.call(
       _selectedCountry,
       _countryList,
       filteredCountries,
       onCountryChanged,
     );
+
     await showDialog(
       context: context,
       useRootNavigator: false,
@@ -424,6 +438,8 @@ class _IntlPhoneFieldState extends State<IntlPhoneField> {
         );
       },
       onChanged: (value) async {
+        setState(() => number = value);
+
         final phoneNumber = PhoneNumber(
           countryISOCode: _selectedCountry.code,
           countryCode: '+${_selectedCountry.fullCountryCode}',
