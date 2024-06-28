@@ -239,6 +239,10 @@ class IntlPhoneField extends StatefulWidget {
 
   final CountryPickerFactory? countryPickerFactory;
 
+  final bool countryPickerUseSafeArea;
+
+  final bool countryPickerBarrierDismissible;
+
   /// The margin of the country selector button.
   ///
   /// The amount of space to surround the country selector button.
@@ -290,6 +294,8 @@ class IntlPhoneField extends StatefulWidget {
     this.showCursor = true,
     this.pickerDialogStyle,
     this.countryPickerFactory,
+    this.countryPickerUseSafeArea = true,
+    this.countryPickerBarrierDismissible = true,
     this.flagsButtonMargin = EdgeInsets.zero,
   }) : super(key: key);
 
@@ -389,6 +395,8 @@ class _IntlPhoneFieldState extends State<IntlPhoneField> {
     await showDialog(
       context: context,
       useRootNavigator: false,
+      useSafeArea: widget.countryPickerUseSafeArea,
+      barrierDismissible: widget.countryPickerBarrierDismissible,
       builder: (context) => StatefulBuilder(
         builder: (ctx, setState) => customCountryPicker != null
             ? customCountryPicker
